@@ -13,13 +13,37 @@ limitations under the License.
 package driver
 
 import (
+	"fmt"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/prometheus/procfs"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/volume/util/fs"
 	"sync"
 	"time"
 )
+
+func mountstats(volId, volPath string) (*procfs.MountStatsNFS, error) {
+	proc, err := procfs.Self()
+	if err != nil {
+		return nil, err
+	}
+	mounts, err := proc.MountStats()
+	if err != nil {
+		return nil, err
+	}
+	for _, mount := range mounts {
+		if mount.Mount != volPath {
+			continue
+		}
+		stats, ok := mount.Stats.(procfs.MountStatsNFS)
+		if !ok {
+			return nil, fmt.Errorf("not NFS")
+		}
+		return &stats, nil
+	}
+	return nil, fmt.Errorf("mount stats for %s at %s not found", volId, volPath)
+}
 
 type volMetrics struct {
 	volPath   string
@@ -28,6 +52,7 @@ type volMetrics struct {
 }
 
 var (
+	volStatsCache        = make(map[string]*procfs.MountStatsNFS)
 	volUsageCache        = make(map[string]*volMetrics)
 	volStatterJobTracker = make(map[string]bool)
 	fsRateLimiter        = make(map[string]int)
@@ -117,6 +142,13 @@ func (v VolStatterImpl) computeDiskUsage(fsId, volId, volPath string) {
 
 	//jittered execution
 	time.Sleep(waitTime)
+
+	stats, err := mountstats(volId, volPath)
+	if err != nil {
+		klog.Errorf("Failed to parse volume stats for path %s: %v", volPath, err)
+		return
+	}
+	volStatsCache[volId] = stats
 
 	used, err := fs.DiskUsage(volPath)
 	if err != nil {

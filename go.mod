@@ -8,6 +8,7 @@ require (
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/onsi/ginkgo v1.12.2
 	github.com/onsi/gomega v1.10.1
+	github.com/prometheus/procfs v0.0.2
 	google.golang.org/grpc v1.26.0
 	k8s.io/api v0.18.10
 	k8s.io/apimachinery v0.18.10
