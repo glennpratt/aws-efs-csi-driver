@@ -1,7 +1,7 @@
 module github.com/kubernetes-sigs/aws-efs-csi-driver
 
 require (
-	github.com/aws/aws-sdk-go v1.31.2
+	github.com/aws/aws-sdk-go v1.34.0
 	github.com/container-storage-interface/spec v1.2.0
 	github.com/golang/mock v1.4.4
 	github.com/kubernetes-csi/csi-test v1.1.1
